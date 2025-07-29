@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Spring Boot Chat</title>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.0/css/bootstrap.min.css}">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .chat-container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 15px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+
+        .message.own {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.other {
+            background: white;
+            border: 1px solid #dee2e6;
+            margin-right: auto;
+        }
+
+        .message.system {
+            background: #e9ecef;
+            text-align: center;
+            font-style: italic;
+            color: #6c757d;
+            max-width: 100%;
+            margin: 10px auto;
+        }
+
+        .message.ai {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            margin-right: auto;
+            max-width: 80%;
+            border-left: 4px solid #20c997;
+        }
+
+        .message-info {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .message-content {
+            font-size: 0.95rem;
+        }
+
+        .chat-input {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .input-group .form-control {
+            border-radius: 25px 0 0 25px;
+            border-right: none;
+        }
+
+        .input-group .btn {
+            border-radius: 0 25px 25px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 0 20px;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+
+        .online-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background-color: #28a745;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        #messageArea {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body>
+<div class="chat-container">
+    <div class="chat-header">
+        <h4><span class="online-indicator"></span>Spring Boot Chat Room</h4>
+        <small id="username-display"></small>
+    </div>
+
+    <div class="chat-messages" id="messageArea">
+        <!-- Messages will be displayed here -->
+    </div>
+
+    <div class="chat-input">
+        <form id="messageForm">
+            <div class="input-group">
+                <input class="form-control" id="message" maxlength="500"
+                       placeholder="Type your message" required type="text">
+                <button class="btn" type="submit">
+                    <svg fill="currentColor" height="20" viewBox="0 0 16 16" width="20">
+                        <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07Zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493Z"/>
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script th:src="@{/webjars/jquery/3.7.0/jquery.min.js}"></script>
+<script th:src="@{/webjars/bootstrap/5.3.0/js/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/webjars/sockjs-client/1.5.1/sockjs.min.js}"></script>
+<script th:src="@{/webjars/stomp-websocket/2.3.4/stomp.min.js}"></script>
+<script>
+    let stompClient = null;
+    let username = null;
+
+    function connect() {
+        // Get username from URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        username = urlParams.get('username');
+
+        if (!username) {
+            window.location.href = '/';
+            return;
+        }
+
+        document.getElementById('username-display').textContent = 'Welcome, ' + username + '!';
+
+        let socket = new SockJS('/ws');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function (frame) {
+            console.log('Connected: ' + frame);
+
+            stompClient.subscribe('/topic/public', function (messageOutput) {
+                showMessage(JSON.parse(messageOutput.body));
+            });
+
+            // Tell your username to the server
+            stompClient.send("/app/chat.addUser", {}, JSON.stringify({
+                sender: username,
+                type: 'JOIN'
+            }));
+        });
+    }
+
+    function sendMessage(event) {
+        event.preventDefault();
+        let messageContent = document.getElementById('message').value.trim();
+
+        if (messageContent && stompClient) {
+            let chatMessage = {
+                sender: username,
+                content: messageContent,
+                type: 'CHAT'
+            };
+
+            stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
+            document.getElementById('message').value = '';
+        }
+    }
+
+    function showMessage(message) {
+        let messageArea = document.getElementById('messageArea');
+        let messageElement = document.createElement('div');
+
+        if (message.type === 'JOIN') {
+            messageElement.className = 'message system';
+            messageElement.innerHTML = '<div class="message-content">' + message.sender + ' joined the chat</div>';
+        } else if (message.type === 'LEAVE') {
+            messageElement.className = 'message system';
+            messageElement.innerHTML = '<div class="message-content">' + message.sender + ' left the chat</div>';
+        } else {
+            let isOwn = message.sender === username;
+            let isAi = message.sender === 'AI Assistant';
+
+            if (isAi) {
+                messageElement.className = 'message ai';
+            } else {
+                messageElement.className = isOwn ? 'message own' : 'message other';
+            }
+
+            let senderDisplay = isOwn ? 'You' : message.sender;
+            if (isAi) {
+                senderDisplay = '🤖 ' + message.sender;
+            }
+
+            messageElement.innerHTML =
+                '<div class="message-info">' +
+                senderDisplay +
+                ' • ' + message.timestamp +
+                '</div>' +
+                '<div class="message-content">' + message.content + '</div>';
+        }
+
+        messageArea.appendChild(messageElement);
+        messageArea.scrollTop = messageArea.scrollHeight;
+    }
+
+    // Event listeners
+    document.getElementById('messageForm').addEventListener('submit', sendMessage);
+
+    // Auto-focus on message input
+    document.getElementById('message').focus();
+
+    // Connect when page loads
+    window.addEventListener('load', connect);
+
+    // Handle page refresh/close
+    window.addEventListener('beforeunload', function () {
+        if (stompClient) {
+            stompClient.disconnect();
+        }
+    });
+</script>
+</body>
+</html>
