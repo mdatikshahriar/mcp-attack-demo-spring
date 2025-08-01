@@ -7,6 +7,8 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class McpChatService {
 
@@ -18,12 +20,30 @@ public class McpChatService {
     @Autowired
     private ToolCallbackProvider toolCallbackProvider;
 
-    public String processWithMcp(String userMessage) {
+    public String processWithMcp(String userMessage, List<String> chatHistory) {
         try {
             logger.info("Processing message with MCP tools: {}", userMessage);
 
+            // Build context from chat history
+            StringBuilder contextBuilder = new StringBuilder();
+            contextBuilder.append("Previous conversation context:\n");
+
+            if (chatHistory != null && !chatHistory.isEmpty()) {
+                // Include last few messages for context (excluding the current one)
+                int startIndex = Math.max(0, chatHistory.size() - 10); // Last 10 messages
+                for (int i = startIndex; i < chatHistory.size() - 1; i++) { // -1 to exclude current message
+                    contextBuilder.append(chatHistory.get(i)).append("\n");
+                }
+            }
+
+            contextBuilder.append("\nCurrent user message: ").append(userMessage);
+            contextBuilder.append("\n\nPlease respond considering the conversation context above.");
+
+            String fullPrompt = contextBuilder.toString();
+            logger.debug("Full prompt with context: {}", fullPrompt);
+
             String response = chatClientBuilder.build()
-                    .prompt(userMessage)
+                    .prompt(fullPrompt)
                     .toolCallbacks(toolCallbackProvider)
                     .call()
                     .content();
@@ -35,6 +55,11 @@ public class McpChatService {
             logger.error("Error processing message with MCP", e);
             return "I'm sorry, I encountered an error while processing your request. Please try again later.";
         }
+    }
+
+    // Keep the old method for backward compatibility
+    public String processWithMcp(String userMessage) {
+        return processWithMcp(userMessage, null);
     }
 
     public boolean isMcpAvailable() {

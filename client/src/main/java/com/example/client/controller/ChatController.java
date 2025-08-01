@@ -14,6 +14,10 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+
 @Controller
 public class ChatController {
 
@@ -28,13 +32,17 @@ public class ChatController {
     @Autowired
     private MessageFilterService messageFilterService;
 
+    // Store chat history per session in memory
+    private final ConcurrentHashMap<String, List<String>> chatHistoryMap = new ConcurrentHashMap<>();
+
     @MessageMapping("/chat.sendMessage")
     @SendTo("/topic/public")
-    public ChatMessage sendMessage(@Payload ChatMessage chatMessage) {
+    public ChatMessage sendMessage(@Payload ChatMessage chatMessage, SimpMessageHeaderAccessor headerAccessor) {
         logger.info("Received message from {}: {}", chatMessage.getSender(),
                 chatMessage.getContent());
 
-        handleAiCommand(chatMessage);
+        String sessionId = headerAccessor.getSessionId();
+        handleAiCommand(chatMessage, sessionId);
 
         return chatMessage;
     }
@@ -45,17 +53,28 @@ public class ChatController {
             SimpMessageHeaderAccessor headerAccessor) {
         // Add username in web socket session
         headerAccessor.getSessionAttributes().put("username", chatMessage.getSender());
-        logger.info("User {} joined the chat", chatMessage.getSender());
+        String sessionId = headerAccessor.getSessionId();
+
+        // Initialize chat history for this session
+        chatHistoryMap.put(sessionId, new ArrayList<>());
+
+        logger.info("User {} joined the chat with session {}", chatMessage.getSender(), sessionId);
         return chatMessage;
     }
 
-    private void handleAiCommand(ChatMessage originalMessage) {
+    private void handleAiCommand(ChatMessage originalMessage, String sessionId) {
         String aiPrompt = originalMessage.getContent().trim();
 
         // Process asynchronously to avoid blocking WebSocket response
         new Thread(() -> {
             try {
                 logger.info("Processing AI command: {}", aiPrompt);
+
+                // Get chat history for this session
+                List<String> chatHistory = chatHistoryMap.getOrDefault(sessionId, new ArrayList<>());
+
+                // Add user message to history
+                chatHistory.add("User: " + aiPrompt);
 
                 // Filter message to determine if it can be handled by MCP tools
                 FilterResult filterResult = messageFilterService.filterMessage(aiPrompt);
@@ -65,12 +84,21 @@ public class ChatController {
 
                 if (filterResult.canBeHandledByMcp()) {
                     logger.info("Message can be handled by MCP tools: {}", filterResult.toolType());
-                    aiResponse = mcpChatService.processWithMcp(filterResult.processedMessage());
+                    aiResponse = mcpChatService.processWithMcp(filterResult.processedMessage(), chatHistory);
                     responseSource = "MCP (" + filterResult.toolType() + ")";
                 } else {
                     logger.info("Message requires LLM processing: {}", filterResult.reason());
-                    aiResponse = mcpChatService.processWithMcp(aiPrompt);
+                    aiResponse = mcpChatService.processWithMcp(aiPrompt, chatHistory);
                     responseSource = "LLM";
+                }
+
+                // Add AI response to history
+                chatHistory.add("Assistant: " + aiResponse);
+
+                // Keep only last 20 messages to prevent memory issues
+                if (chatHistory.size() > 20) {
+                    chatHistory = new ArrayList<>(chatHistory.subList(chatHistory.size() - 20, chatHistory.size()));
+                    chatHistoryMap.put(sessionId, chatHistory);
                 }
 
                 // Send AI response as a new message
@@ -94,5 +122,11 @@ public class ChatController {
                 messagingTemplate.convertAndSend("/topic/public", errorMessage);
             }
         }).start();
+    }
+
+    // Clean up chat history when user disconnects
+    public void cleanupChatHistory(String sessionId) {
+        chatHistoryMap.remove(sessionId);
+        logger.info("Cleaned up chat history for session: {}", sessionId);
     }
 }

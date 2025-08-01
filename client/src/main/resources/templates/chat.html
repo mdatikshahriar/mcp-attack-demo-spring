@@ -12,13 +12,13 @@
         }
 
         .chat-container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 20px auto;
             background: white;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             overflow: hidden;
-            height: 90vh;
+            height: 95vh;
             display: flex;
             flex-direction: column;
         }
@@ -39,10 +39,11 @@
 
         .message {
             margin-bottom: 15px;
-            padding: 10px 15px;
+            padding: 12px 16px;
             border-radius: 15px;
-            max-width: 70%;
+            max-width: 75%;
             word-wrap: break-word;
+            line-height: 1.5;
         }
 
         .message.own {
@@ -71,7 +72,7 @@
             background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
             color: white;
             margin-right: auto;
-            max-width: 80%;
+            max-width: 85%;
             border-left: 4px solid #20c997;
         }
 
@@ -83,29 +84,72 @@
 
         .message-content {
             font-size: 0.95rem;
+            white-space: pre-wrap;
         }
 
         .chat-input {
-            padding: 20px;
+            padding: 15px 20px;
             background: white;
             border-top: 1px solid #dee2e6;
+            position: relative;
         }
 
-        .input-group .form-control {
-            border-radius: 25px 0 0 25px;
-            border-right: none;
+        .input-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
         }
 
-        .input-group .btn {
-            border-radius: 0 25px 25px 0;
+        #message {
+            flex: 1;
+            min-height: 40px;
+            max-height: 200px;
+            resize: none;
+            border: 2px solid #dee2e6;
+            border-radius: 20px;
+            padding: 10px 15px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            overflow-y: auto;
+            transition: border-color 0.3s ease;
+        }
+
+        #message:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        #message::placeholder {
+            color: #6c757d;
+        }
+
+        .send-btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
             color: white;
-            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s ease, opacity 0.3s ease;
+            flex-shrink: 0;
         }
 
-        .btn:hover {
-            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        .send-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
         }
 
         .online-indicator {
@@ -120,12 +164,162 @@
         #messageArea {
             scroll-behavior: smooth;
         }
+
+        .character-count {
+            position: absolute;
+            bottom: 5px;
+            right: 80px;
+            font-size: 0.75rem;
+            color: #6c757d;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+
+        .character-count.warning {
+            color: #ff6b6b;
+        }
+
+        .expand-btn {
+            position: absolute;
+            top: -35px;
+            right: 20px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 15px 15px 0 0;
+            padding: 5px 15px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            color: #6c757d;
+            transition: all 0.3s ease;
+        }
+
+        .expand-btn:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .input-expanded {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .expanded-input-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .expanded-input-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .expanded-input-header h5 {
+            margin: 0;
+            color: #495057;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 0;
+            margin-left: auto;
+        }
+
+        .close-btn:hover {
+            color: #495057;
+        }
+
+        #expandedMessage {
+            flex: 1;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            resize: none;
+            outline: none;
+            min-height: 200px;
+        }
+
+        #expandedMessage:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .expanded-input-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .expanded-send-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 10px 25px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .expanded-send-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+        }
+
+        .expanded-send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                margin: 10px;
+                height: 100vh;
+                border-radius: 0;
+            }
+
+            .message {
+                max-width: 85%;
+            }
+
+            .expanded-input-container {
+                margin: 10px;
+                max-height: 95vh;
+            }
+        }
     </style>
 </head>
 <body>
 <div class="chat-container">
     <div class="chat-header">
-        <h4><span class="online-indicator"></span>Spring Boot Chat Room</h4>
+        <h4><span class="online-indicator"></span>AI Chat Assistant</h4>
         <small id="username-display"></small>
     </div>
 
@@ -134,17 +328,37 @@
     </div>
 
     <div class="chat-input">
-        <form id="messageForm">
-            <div class="input-group">
-                <input class="form-control" id="message" maxlength="500"
-                       placeholder="Type your message" required type="text">
-                <button class="btn" type="submit">
-                    <svg fill="currentColor" height="20" viewBox="0 0 16 16" width="20">
-                        <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07Zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493Z"/>
-                    </svg>
-                </button>
-            </div>
-        </form>
+        <div class="expand-btn" onclick="expandInput()" title="Expand for longer messages">
+            📝 Expand
+        </div>
+        <div class="input-container">
+            <textarea class="form-control" id="message" maxlength="10000"
+                      placeholder="Type your message... (Shift+Enter for new line, Enter to send)"
+                      rows="1"></textarea>
+            <button class="send-btn" type="button" onclick="sendMessage()" id="sendBtn">
+                <svg fill="currentColor" height="20" viewBox="0 0 16 16" width="20">
+                    <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07Zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493Z"/>
+                </svg>
+            </button>
+        </div>
+        <div class="character-count" id="charCount">0/10000</div>
+    </div>
+</div>
+
+<!-- Expanded Input Modal -->
+<div class="input-expanded" id="expandedInputModal" style="display: none;">
+    <div class="expanded-input-container">
+        <div class="expanded-input-header">
+            <h5>Compose Your Message</h5>
+            <button class="close-btn" onclick="closeExpandedInput()">&times;</button>
+        </div>
+        <textarea id="expandedMessage" placeholder="Write your message here... You can write as much as you want."></textarea>
+        <div class="expanded-input-footer">
+            <div class="character-count" id="expandedCharCount">0/10000</div>
+            <button class="expanded-send-btn" onclick="sendExpandedMessage()" id="expandedSendBtn">
+                Send Message
+            </button>
+        </div>
     </div>
 </div>
 
@@ -186,12 +400,10 @@
         });
     }
 
-    function sendMessage(event) {
-        event.preventDefault();
-        let messageContent = document.getElementById('message').value.trim();
-
+    function sendMessage() {
+        const messageContent = document.getElementById('message').value.trim();
         if (messageContent && stompClient) {
-            let chatMessage = {
+            const chatMessage = {
                 sender: username,
                 content: messageContent,
                 type: 'CHAT'
@@ -199,6 +411,23 @@
 
             stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
             document.getElementById('message').value = '';
+            updateCharCount();
+            autoResize(document.getElementById('message'));
+        }
+    }
+
+    function sendExpandedMessage() {
+        const messageContent = document.getElementById('expandedMessage').value.trim();
+        if (messageContent && stompClient) {
+            const chatMessage = {
+                sender: username,
+                content: messageContent,
+                type: 'CHAT'
+            };
+
+            stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
+            document.getElementById('expandedMessage').value = '';
+            closeExpandedInput();
         }
     }
 
@@ -214,7 +443,7 @@
             messageElement.innerHTML = '<div class="message-content">' + message.sender + ' left the chat</div>';
         } else {
             let isOwn = message.sender === username;
-            let isAi = message.sender === 'AI Assistant';
+            let isAi = message.sender.includes('AI Assistant');
 
             if (isAi) {
                 messageElement.className = 'message ai';
@@ -232,15 +461,100 @@
                 senderDisplay +
                 ' • ' + message.timestamp +
                 '</div>' +
-                '<div class="message-content">' + message.content + '</div>';
+                '<div class="message-content">' + escapeHtml(message.content) + '</div>';
         }
 
         messageArea.appendChild(messageElement);
         messageArea.scrollTop = messageArea.scrollHeight;
     }
 
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function autoResize(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+    }
+
+    function updateCharCount() {
+        const messageInput = document.getElementById('message');
+        const charCount = document.getElementById('charCount');
+        const length = messageInput.value.length;
+
+        charCount.textContent = length + '/10000';
+        if (length > 9000) {
+            charCount.classList.add('warning');
+        } else {
+            charCount.classList.remove('warning');
+        }
+    }
+
+    function updateExpandedCharCount() {
+        const messageInput = document.getElementById('expandedMessage');
+        const charCount = document.getElementById('expandedCharCount');
+        const length = messageInput.value.length;
+
+        charCount.textContent = length + '/10000';
+        if (length > 9000) {
+            charCount.classList.add('warning');
+        } else {
+            charCount.classList.remove('warning');
+        }
+    }
+
+    function expandInput() {
+        const modal = document.getElementById('expandedInputModal');
+        const expandedMessage = document.getElementById('expandedMessage');
+        const currentMessage = document.getElementById('message').value;
+
+        expandedMessage.value = currentMessage;
+        modal.style.display = 'flex';
+        expandedMessage.focus();
+        updateExpandedCharCount();
+    }
+
+    function closeExpandedInput() {
+        const modal = document.getElementById('expandedInputModal');
+        const expandedMessage = document.getElementById('expandedMessage');
+        const currentMessage = document.getElementById('message');
+
+        currentMessage.value = expandedMessage.value;
+        modal.style.display = 'none';
+        autoResize(currentMessage);
+        updateCharCount();
+    }
+
     // Event listeners
-    document.getElementById('messageForm').addEventListener('submit', sendMessage);
+    document.getElementById('message').addEventListener('input', function() {
+        autoResize(this);
+        updateCharCount();
+    });
+
+    document.getElementById('message').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    document.getElementById('expandedMessage').addEventListener('input', updateExpandedCharCount);
+
+    document.getElementById('expandedMessage').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.ctrlKey) {
+            e.preventDefault();
+            sendExpandedMessage();
+        }
+    });
+
+    // Close modal when clicking outside
+    document.getElementById('expandedInputModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeExpandedInput();
+        }
+    });
 
     // Auto-focus on message input
     document.getElementById('message').focus();
@@ -254,6 +568,9 @@
             stompClient.disconnect();
         }
     });
+
+    // Initialize
+    updateCharCount();
 </script>
 </body>
 </html>

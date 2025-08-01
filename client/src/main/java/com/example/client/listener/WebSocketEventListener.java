@@ -1,5 +1,6 @@
 package com.example.client.listener;
 
+import com.example.client.controller.ChatController;
 import com.example.client.model.ChatMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,9 @@ public class WebSocketEventListener {
     @Autowired
     private SimpMessageSendingOperations messagingTemplate;
 
+    @Autowired
+    private ChatController chatController;
+
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectedEvent event) {
         logger.info("Received a new web socket connection");
@@ -27,10 +31,14 @@ public class WebSocketEventListener {
     @EventListener
     public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
-
+        String sessionId = headerAccessor.getSessionId();
         String username = (String) headerAccessor.getSessionAttributes().get("username");
+
         if (username != null) {
-            logger.info("User Disconnected: {}", username);
+            logger.info("User Disconnected: {} with session: {}", username, sessionId);
+
+            // Clean up chat history for this session
+            chatController.cleanupChatHistory(sessionId);
 
             ChatMessage chatMessage = new ChatMessage();
             chatMessage.setType(ChatMessage.MessageType.LEAVE);
