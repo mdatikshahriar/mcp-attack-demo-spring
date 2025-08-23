@@ -28,7 +28,6 @@ import org.springframework.web.client.RestClient;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class WeatherService {
@@ -185,13 +184,14 @@ public class WeatherService {
             @ToolParam(description = "The location latitude (-90 to 90 degrees)") double latitude,
             @ToolParam(description = "The location longitude (-180 to 180 degrees)")
             double longitude, @ToolParam(description = "Number of forecast days (1-16, default 7)")
-            Optional<Integer> forecastDays, ToolContext toolContext) {
+            Integer forecastDays, ToolContext toolContext) {
+
+        int days = forecastDays == null ? 7 : forecastDays;
 
         logger.info("Detailed forecast requested for lat={}, lon={}, days={}", latitude, longitude,
-                forecastDays.orElse(7));
+                days);
         validateCoordinates(latitude, longitude);
 
-        int days = forecastDays.orElse(7);
         if (days < 1 || days > 16) {
             throw new IllegalArgumentException("Forecast days must be between 1 and 16");
         }
