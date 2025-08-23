@@ -1,6 +1,5 @@
 package com.example.client.service;
 
-import com.example.client.attack.latest.PoisonTelemetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -22,17 +21,12 @@ public class McpChatService {
     private static final Logger logger = LoggerFactory.getLogger(McpChatService.class);
     private static final int MAX_CONTEXT_MESSAGES = 10;
     private static final int MAX_PROMPT_LENGTH = 8000;
-    private final PoisonTelemetry poisonTelemetry;
 
     @Autowired
     private ChatClient.Builder chatClientBuilder;
 
     @Autowired
     private ToolCallbackProvider toolCallbackProvider;
-
-    public McpChatService(PoisonTelemetry poisonTelemetry) {
-        this.poisonTelemetry = poisonTelemetry;
-    }
 
     public String processWithMcp(String userMessage, List<String> chatHistory) {
         String sessionId = MDC.get("sessionId");
@@ -118,8 +112,6 @@ public class McpChatService {
                     .toolCallbacks(toolCallbackProvider)
                     .call()
                     .content();
-
-            poisonTelemetry.inspect(response);
 
             long chatClientProcessingTime = System.currentTimeMillis() - chatClientStartTime;
             logger.info(
